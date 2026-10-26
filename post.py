@@ -2,7 +2,7 @@ import os, json, time, datetime, urllib.request, urllib.error
 
 UA = {"User-Agent": "Mozilla/5.0 weekly-video-bot"}
 HOOK = os.environ.get("DISCORD_WEBHOOK", "").strip()
-KEY = os.environ.get("AIzaSyD5wXgrijfpFyjUJNYrKUi4u0W5Z83CQM8", "").strip()
+KEY = os.environ.get("AIzaSyBEOuCHvsk34vcd7cVeYdMH94KGuDWeZXo", "").strip()
 MAX_AGE_DAYS = 0   # 0 = always post each channel's latest video; 7 = only uploads from the last 7 days
 
 if not HOOK:
