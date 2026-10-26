@@ -1,8 +1,8 @@
 name: weekly-post
 on:
   schedule:
-    - cron: "0 7 * * 1"   # every Monday 07:00 UTC
-  workflow_dispatch:       # lets you test with a button
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
 jobs:
   post:
     runs-on: ubuntu-latest
@@ -11,6 +11,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Check secret
+        run: |
+          if [ -z "$K" ]; then echo "KEY IS EMPTY"; else echo "KEY HAS ${#K} characters"; fi
+        env:
+          K: ${{ secrets.YOUTUBE_API_KEY }}
       - run: python post.py
         env:
           DISCORD_WEBHOOK: ${{ secrets.NOTIBOT_PUBLIC }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
