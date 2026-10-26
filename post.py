@@ -1,12 +1,14 @@
-import os, json, time, datetime, urllib.request, urllib.error, xml.etree.ElementTree as ET
+import os, json, time, datetime, urllib.request, urllib.error
 
-NS = {"a": "http://www.w3.org/2005/Atom"}
 UA = {"User-Agent": "Mozilla/5.0 weekly-video-bot"}
 HOOK = os.environ.get("DISCORD_WEBHOOK", "").strip()
-MAX_AGE_DAYS = 0   # 0 = always post each channel's latest video; 7 = only if uploaded in the last 7 days
+KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
+MAX_AGE_DAYS = 0   # 0 = always post each channel's latest video; 7 = only uploads from the last 7 days
 
 if not HOOK:
-    raise SystemExit("ERROR: webhook secret is empty. Check the NOTIBOT_PUBLIC secret.")
+    raise SystemExit("ERROR: Discord webhook secret is empty (NOTIBOT_PUBLIC).")
+if not KEY:
+    raise SystemExit("ERROR: YOUTUBE_API_KEY secret is empty.")
 
 def post(text):
     req = urllib.request.Request(
@@ -18,7 +20,16 @@ def post(text):
         urllib.request.urlopen(req)
     except urllib.error.HTTPError as e:
         raise SystemExit(f"ERROR: Discord rejected the message ({e.code}). Check the webhook URL.")
-    time.sleep(3)  # one by one, with a pause between videos
+    time.sleep(3)
+
+def latest_video(channel_id):
+    uploads = "UU" + channel_id[2:]   # a channel's uploads playlist
+    url = ("https://www.googleapis.com/youtube/v3/playlistItems"
+           f"?part=contentDetails&maxResults=1&playlistId={uploads}&key={KEY}")
+    data = json.loads(urllib.request.urlopen(urllib.request.Request(url, headers=UA)).read())
+    item = data["items"][0]["contentDetails"]
+    published = datetime.datetime.fromisoformat(item["videoPublishedAt"].replace("Z", "+00:00"))
+    return f"https://www.youtube.com/watch?v={item['videoId']}", published
 
 ids = [l.split("#")[0].strip() for l in open("channels.txt").read().splitlines()]
 ids = [i for i in ids if i]
@@ -29,12 +40,10 @@ post("**Weekly knowledge videos**")
 
 for cid in ids:
     try:
-        req = urllib.request.Request(
-            f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}", headers=UA)
-        feed = ET.fromstring(urllib.request.urlopen(req).read())
-        entry = feed.find("a:entry", NS)
-        link = entry.find("a:link", NS).attrib["href"]
-        published = datetime.datetime.fromisoformat(entry.find("a:published", NS).text)
+        link, published = latest_video(cid)
+    except urllib.error.HTTPError as e:
+        print(f"SKIPPED {cid}: HTTP {e.code} {e.read().decode()[:200]}")
+        continue
     except Exception as e:
         print(f"SKIPPED {cid}: {e}")
         continue
