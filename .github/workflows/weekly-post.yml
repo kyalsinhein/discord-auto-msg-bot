@@ -1,0 +1,16 @@
+name: weekly-post
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # every Monday 07:00 UTC
+  workflow_dispatch:       # lets you test with a button
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python post.py
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.NOTIBOT_PUBLIC }}
